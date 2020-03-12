@@ -8,6 +8,7 @@ $(async function() {
   const $ownStories = $("#my-articles");
   const $navLogin = $("#nav-login");
   const $navLogOut = $("#nav-logout");
+  const $navSubmit = $("#nav-submit");
 
   // global storyList variable
   let storyList = null;
@@ -78,6 +79,15 @@ $(async function() {
     $createAccountForm.slideToggle();
     $allStoriesList.toggle();
   });
+
+  // ==========================
+  $navSubmit.on("click", function() {
+    // Show the Login and Create Account Forms
+    $loginForm.slideToggle();
+    $createAccountForm.slideToggle();
+    $allStoriesList.toggle();
+  });
+  // ==========================
 
   /**
    * Event handler for Navigation to Homepage
