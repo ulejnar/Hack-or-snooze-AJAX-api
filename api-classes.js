@@ -48,7 +48,31 @@ class StoryList {
     // TODO - Implement this functions!
     // this function should return the newly created story so it can be used in
     // the script.js file where it will be appended to the DOM
+    const response= await axios.post(`${BASE_URL}/stories`,{
+      token: user.loginToken,"story":{author: newStory.author,title:newStory.title,url:newStory.url}
+    } )
+    newStory = new Story(response.data.story);
+    this.stories.push(newStory);
+
+    return newStory;
   }
+
+  static async deleteStory(user, story) {
+    // TODO - Implement this functions!
+    // this function should return the newly created story so it can be used in
+    // the script.js file where it will be appended to the DOM
+    if(user.username!==story.username){
+      return
+    }
+
+    const response= await axios.delete(`${BASE_URL}/stories/${story.storyId}`,{
+      token: user.loginToken,"story":{author: newStory.author,title:newStory.title,url:newStory.url}
+    } )
+    ;
+    this.stories=this.stories.filter(function(val){
+      val.storyId===story.storyId})
+  }
+  
 }
 
 
@@ -78,6 +102,22 @@ class User {
    * - password: a new password
    * - name: the user's full name
    */
+  checkIfFavorited(story){
+    for(let s of this.favorites){
+      if(story.storyId===s.storyId){
+        return true
+      }
+    }
+    return false;
+  }
+  checkIfOwnStory(story){
+    for(let s of this.ownStories){
+      if(story.storyId===s.storyId){
+        return true
+      }
+    }
+    return false;
+  }
 
   static async create(username, password, name) {
     const response = await axios.post(`${BASE_URL}/signup`, {
@@ -96,13 +136,27 @@ class User {
 
     return newUser;
   }
+  //update users favorites
 
-  /* Login in user and return user instance.
-
-   * - username: an existing user's username
-   * - password: an existing user's password
-   */
-
+  async addFavorite(story){
+    const response= await axios.post(`${BASE_URL}/users/${this.username}/favorites/${story.storyId}`,
+    {token: this.loginToken})
+    const updatedUser = new User(response.data.user);
+    updatedUser.favorites = response.data.user.favorites.map(s => new Story(s));
+    updatedUser.ownStories = response.data.user.stories.map(s => new Story(s));
+    updatedUser.loginToken = this.loginToken;
+    return updatedUser;
+  }
+  async removeFavorite(story){
+    const response= await axios.delete(`${BASE_URL}/users/${this.username}/favorites/${story.storyId}`,
+    {params:{token: this.loginToken}})
+    const updatedUser = new User(response.data.user);
+    updatedUser.favorites = response.data.user.favorites.map(s => new Story(s));
+    updatedUser.ownStories = response.data.user.stories.map(s => new Story(s));
+    updatedUser.loginToken = this.loginToken;
+    return updatedUser;
+  }
+ 
   static async login(username, password) {
     const response = await axios.post(`${BASE_URL}/login`, {
       user: {

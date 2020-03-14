@@ -44,6 +44,12 @@ nav {
   padding: 5px 20px;
   border-radius: 3px 3px 0 0;
 }
+#navigation li{
+  list-style: none;
+  display:inline;
+  padding-left:2px;
+  border-left: 2px solid black;
+}
 
 .main-nav-links {
   margin: 0 15px;

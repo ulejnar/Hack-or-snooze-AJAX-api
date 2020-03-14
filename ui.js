@@ -9,6 +9,13 @@ $(async function() {
   const $navLogin = $("#nav-login");
   const $navLogOut = $("#nav-logout");
   const $navSubmit = $("#nav-submit");
+  const $navFavorites =$("#nav-favorites")
+  const $navMySTories =$("#nav-myStories")
+  
+
+ 
+  const $navigation =$("#navigation");
+  const $favoritedArticles=$("#favorited-articles");
 
   // global storyList variable
   let storyList = null;
@@ -42,6 +49,15 @@ $(async function() {
    * Event listener for signing up.
    *  If successfully we will setup a new user instance
    */
+  $submitForm.on("submit", async function(evt){
+    evt.preventDefault(); // no page refresh
+    let author=$('#author').val();
+    let title=$('#title').val();
+    let url=$('#url').val();
+    let story={author, title, url}
+    const newStory = await storyList.addStory(currentUser, story);
+    generateStories();
+  })
 
   $createAccountForm.on("submit", async function(evt) {
     evt.preventDefault(); // no page refresh
@@ -67,6 +83,7 @@ $(async function() {
     localStorage.clear();
     // refresh the page, clearing memory
     location.reload();
+   
   });
 
   /**
@@ -80,14 +97,38 @@ $(async function() {
     $allStoriesList.toggle();
   });
 
-  // ==========================
   $navSubmit.on("click", function() {
     // Show the Login and Create Account Forms
-    $loginForm.slideToggle();
-    $createAccountForm.slideToggle();
-    $allStoriesList.toggle();
+    $submitForm.slideToggle();
+    
   });
-  // ==========================
+   $navFavorites.on("click", function(){
+
+      $allStoriesList.hide();
+      $favoritedArticles.empty();
+      $favoritedArticles.show();
+      for( let favoriteStory of currentUser.favorites){
+        let htmlFavSt=generateStoryHTML(favoriteStory)
+        $favoritedArticles.append(htmlFavSt);
+        $(`#fav-${favoriteStory.storyId}`).on("click",function(){
+        addFavoriteListeners(favoriteStory);
+      })
+   }})
+   $navMySTories.on("click", function(){
+
+    $allStoriesList.hide();
+    $ownStories.empty();
+    $ownStories.show();
+    for( let createdStory of currentUser.ownStories){
+        let htmlCreatedStory=generateStoryHTML(createdStory)
+        $ownStories.append(htmlCreatedStory);
+        $(`#fav-${createdStory.storyId}`).on("click",function(){
+        addFavoriteListeners(createdStory);
+        })
+        $(`#del-${createdStory.storyId}`).on("click",function(){
+          addTrashListeners(createdStory);
+    })
+ }})
 
   /**
    * Event handler for Navigation to Homepage
@@ -128,6 +169,7 @@ $(async function() {
     // hide the forms for logging in and signing up
     $loginForm.hide();
     $createAccountForm.hide();
+    $submitForm.hide()
 
     // reset those forms
     $loginForm.trigger("reset");
@@ -153,11 +195,34 @@ $(async function() {
     // empty out that part of the page
     $allStoriesList.empty();
 
+
     // loop through all of our stories and generate HTML for them
     for (let story of storyList.stories) {
       const result = generateStoryHTML(story);
       $allStoriesList.append(result);
+      $(`#fav-${story.storyId}`).on("click", function(){
+        addFavoriteListeners(story)
+      } );
     }
+  }
+  async function addFavoriteListeners(story){
+    $(`#fav-${story.storyId}`).toggleClass("far");
+    $(`#fav-${story.storyId}`).toggleClass("fas");
+
+    if($(`#fav-${story.storyId}`).hasClass("fas")){
+      let updatedUser=await currentUser.addFavorite(story);
+    currentUser=updatedUser;
+
+    }
+    else{
+      
+      let updatedUser=await currentUser.removeFavorite(story);
+      currentUser=updatedUser;
+    }
+  }
+
+  async function addTrashListeners(story){
+    $(`#del-${story.storyId}`)
   }
 
   /**
@@ -166,10 +231,14 @@ $(async function() {
 
   function generateStoryHTML(story) {
     let hostName = getHostName(story.url);
-
-    // render story markup
+    let star=currentUser.checkIfFavorited(story)?"fas":"far"
+    let trash=currentUser.checkIfOwnStory(story)?"fas fa-trash":""
+    console.log(story);
     const storyMarkup = $(`
-      <li id="${story.storyId}">
+      <li id="${story.storyId}" > 
+      <i class="${trash}" id="del-${story.storyId}> </i>
+      <i class="${star} fa-star" id="fav-${story.storyId}"> </i>
+      
         <a class="article-link" href="${story.url}" target="a_blank">
           <strong>${story.title}</strong>
         </a>
@@ -191,7 +260,7 @@ $(async function() {
       $filteredArticles,
       $ownStories,
       $loginForm,
-      $createAccountForm
+      $createAccountForm,
     ];
     elementsArr.forEach($elem => $elem.hide());
   }
@@ -199,6 +268,7 @@ $(async function() {
   function showNavForLoggedInUser() {
     $navLogin.hide();
     $navLogOut.show();
+    $navigation.show();
   }
 
   /* simple function to pull the hostname from a URL */
